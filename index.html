@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Nate — Weekly Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Space+Mono:wght@400;700&family=Manrope:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0b;
+  --surface: #111113;
+  --card: #18181c;
+  --card2: #1e1e24;
+  --border: #252529;
+  --border2: #2e2e35;
+  --gold: #d4a853;
+  --gold-dim: rgba(212,168,83,0.12);
+  --gold-border: rgba(212,168,83,0.22);
+  --green: #52c48a;
+  --green-dim: rgba(82,196,138,0.1);
+  --red: #e05c5c;
+  --red-dim: rgba(224,92,92,0.08);
+  --amber: #e09a3c;
+  --blue: #6c9fff;
+  --purple: #a064dc;
+  --teal: #3ecfcf;
+  --orange: #e07c5c;
+  --pink: #d46fa8;
+  --text: #ede9e0;
+  --text2: #8a8690;
+  --text3: #4e4b58;
+  --radius: 14px;
+  --radius-sm: 9px;
+}
+
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  min-height: 100vh;
+  padding-bottom: 80px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 40% at 85% 5%, rgba(212,168,83,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 50% at 5% 90%, rgba(108,159,255,0.03) 0%, transparent 55%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.header {
+  position: relative; z-index: 1;
+  padding: 44px 22px 20px;
+  text-align: center;
+}
+
+.week-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 12px;
+}
+.week-badge::before, .week-badge::after {
+  content: ''; display: block; width: 22px; height: 1px;
+  background: var(--gold); opacity: 0.35;
+}
+
+h1 { font-family: 'Playfair Display', serif; font-size: 2.6rem; font-weight: 700; line-height: 1.05; margin-bottom: 6px; }
+h1 em { font-style: italic; color: var(--gold); }
+.header-sub { font-size: 10.5px; color: var(--text3); letter-spacing: 0.04em; }
+
+/* Score Ring */
+.score-section {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px 22px 24px;
+}
+
+.ring-wrap { position: relative; width: 150px; height: 150px; margin-bottom: 14px; }
+.ring-wrap svg { transform: rotate(-90deg); width: 150px; height: 150px; }
+.ring-bg { fill: none; stroke: var(--border2); stroke-width: 9; }
+.ring-fill {
+  fill: none; stroke: var(--gold); stroke-width: 9; stroke-linecap: round;
+  stroke-dasharray: 377; stroke-dashoffset: 377;
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1), stroke 0.3s;
+}
+.ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-pct { font-family: 'Playfair Display', serif; font-size: 2.1rem; font-weight: 700; line-height: 1; }
+.ring-status { font-family: 'Space Mono', monospace; font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 5px; }
+.s-low { color: var(--red); } .s-fair { color: var(--amber); } .s-good { color: var(--green); } .s-elite { color: var(--gold); }
+
+.score-row { display: flex; gap: 28px; }
+.score-col { text-align: center; }
+.score-val { font-weight: 800; font-size: 17px; color: var(--text); }
+.score-lbl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* Tabs */
+.tabs {
+  position: relative; z-index: 1;
+  display: flex; margin: 0 14px 18px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 11px; padding: 4px; gap: 3px;
+}
+.tab {
+  flex: 1; padding: 9px 2px; border-radius: 8px; border: none;
+  background: transparent; color: var(--text2);
+  font-family: 'Manrope', sans-serif; font-size: 10.5px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+.tab.active { background: var(--card2); color: var(--text); border: 1px solid var(--border2); }
+
+/* Panels */
+.panel { display: none; position: relative; z-index: 1; }
+.panel.active { display: block; animation: fadeUp 0.22s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+.slabel {
+  font-family: 'Space Mono', monospace; font-size: 8.5px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--text3); padding: 0 20px; margin-bottom: 10px;
+}
+
+/* Habit cards */
+.habit-card {
+  margin: 0 14px 10px; background: var(--card);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; transition: border-color 0.25s;
+}
+.habit-card.met { border-color: rgba(82,196,138,0.22); }
+
+.habit-header { display: flex; align-items: center; gap: 11px; padding: 13px 15px 10px; }
+.habit-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.habit-meta { flex: 1; min-width: 0; }
+.habit-name { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.habit-target { font-size: 9.5px; color: var(--text3); font-family: 'Space Mono', monospace; }
+.habit-count { font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; }
+
+/* Dots */
+.dot-row { display: flex; gap: 6px; padding: 0 15px 13px; flex-wrap: wrap; }
+.dot {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1.5px solid var(--border2); background: transparent;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--text3); font-family: 'Space Mono', monospace;
+  transition: all 0.15s; user-select: none;
+}
+.dot:active { transform: scale(0.88); }
+.dot.filled { border-color: transparent; color: #fff; font-size: 14px; }
+
+/* Habit color themes */
+.h-prayer .habit-icon  { background: rgba(212,168,83,0.12); }
+.h-prayer .dot.filled  { background: var(--gold); }
+.h-prayer .habit-count { color: var(--gold); }
+
+.h-gym .habit-icon  { background: rgba(108,159,255,0.1); }
+.h-gym .dot.filled  { background: var(--blue); }
+.h-gym .habit-count { color: var(--blue); }
+
+.h-cardio .habit-icon  { background: rgba(62,207,207,0.1); }
+.h-cardio .dot.filled  { background: var(--teal); }
+.h-cardio .habit-count { color: var(--teal); }
+
+.h-walk .habit-icon  { background: rgba(82,196,138,0.1); }
+.h-walk .dot.filled  { background: var(--green); }
+.h-walk .habit-count { color: var(--green); }
+
+.h-breath .habit-icon  { background: rgba(212,111,168,0.1); }
+.h-breath .dot.filled  { background: var(--pink); }
+.h-breath .habit-count { color: var(--pink); }
+
+.h-meditate .habit-icon  { background: rgba(160,100,220,0.1); }
+.h-meditate .dot.filled  { background: var(--purple); }
+.h-meditate .habit-count { color: var(--purple); }
+
+.h-reading .habit-icon  { background: rgba(224,124,92,0.1); }
+.h-reading .dot.filled  { background: var(--orange); }
+.h-reading .habit-count { color: var(--orange); }
+
+.h-outreach .habit-icon  { background: rgba(224,92,92,0.1); }
+.h-outreach .dot.filled  { background: var(--red); }
+.h-outreach .habit-count { color: var(--red); }
+
+/* Dopamine note */
+.dnote {
+  margin: 0 14px 12px; padding: 12px 14px;
+  background: var(--gold-dim); border: 1px solid var(--gold-border);
+  border-radius: var(--radius-sm); font-size: 10.5px; color: #c9a55a; line-height: 1.65;
+}
+.dnote strong { color: var(--gold); }
+
+/* Tasks */
+.task-input-row { display: flex; gap: 8px; margin: 0 14px 14px; }
+.task-input {
+  flex: 1; background: var(--card); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  color: var(--text); font-family: 'Manrope', sans-serif; font-size: 13px;
+  outline: none; -webkit-appearance: none;
+}
+.task-input::placeholder { color: var(--text3); }
+.task-input:focus { border-color: var(--gold); }
+
+.add-btn {
+  background: var(--gold); border: none; border-radius: var(--radius-sm);
+  width: 46px; height: 46px; font-size: 24px; color: #0a0a0b;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; flex-shrink: 0; transition: transform 0.1s;
+}
+.add-btn:active { transform: scale(0.92); }
+
+.task-count-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 0 14px 10px; font-size: 10px; color: var(--text3);
+  font-family: 'Space Mono', monospace;
+}
+.task-count-warn { color: var(--amber); }
+
+.task-list { padding: 0 14px; }
+.task-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 13px 0; border-bottom: 1px solid var(--border);
+  animation: slideIn 0.18s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+.task-check {
+  width: 24px; height: 24px; border-radius: 7px;
+  border: 1.5px solid var(--border2); background: transparent;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.15s;
+}
+.task-check.checked { background: var(--green); border-color: var(--green); }
+.task-check.checked::after { content: '✓'; font-size: 13px; color: #fff; font-weight: 800; }
+
+.task-text { flex: 1; font-size: 13px; color: var(--text); line-height: 1.4; transition: color 0.2s; }
+.task-text.done { text-decoration: line-through; color: var(--text3); }
+
+.task-del {
+  background: none; border: none; color: var(--text3);
+  font-size: 18px; cursor: pointer; padding: 4px 6px; opacity: 0.4; line-height: 1;
+}
+
+.empty-state { text-align: center; padding: 44px 20px; color: var(--text3); font-size: 12px; line-height: 1.9; }
+.empty-emoji { font-size: 34px; display: block; margin-bottom: 10px; }
+
+/* Protocol */
+.proto-card {
+  margin: 0 14px 10px; background: var(--card);
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.proto-head { display: flex; align-items: center; gap: 11px; padding: 14px 15px; border-bottom: 1px solid var(--border); }
+.proto-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.proto-title { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+.proto-tag { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.proto-body { padding: 13px 15px; font-size: 12px; color: var(--text2); line-height: 1.75; }
+.proto-body strong { color: var(--text); font-weight: 600; }
+.proto-why { margin-top: 9px; padding: 8px 11px; background: rgba(255,255,255,0.025); border-left: 2px solid var(--border2); border-radius: 0 5px 5px 0; font-size: 10.5px; font-style: italic; color: var(--text3); line-height: 1.6; }
+
+/* History */
+.hist-table { margin: 0 14px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.hist-row { display: grid; grid-template-columns: 1fr 48px 60px 72px; gap: 6px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.hist-row:last-child { border-bottom: none; }
+.hist-head { background: var(--surface); font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); padding: 10px 14px; }
+.hist-week { font-size: 11.5px; font-weight: 700; color: var(--text); }
+.hist-num  { font-size: 11px; color: var(--text2); text-align: center; }
+.hist-pct  { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; text-align: right; }
+.hist-stat { text-align: right; }
+
+.pill { display: inline-block; font-size: 8px; padding: 2px 7px; border-radius: 20px; font-weight: 700; font-family: 'Space Mono', monospace; }
+.pill-low   { background: var(--red-dim); color: var(--red); }
+.pill-fair  { background: rgba(224,154,60,0.1); color: var(--amber); }
+.pill-good  { background: var(--green-dim); color: var(--green); }
+.pill-elite { background: var(--gold-dim); color: var(--gold); }
+
+.new-week-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 14px 14px 0; padding: 13px;
+  background: transparent; border: 1px dashed var(--border2); border-radius: var(--radius-sm);
+  color: var(--text3); font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; width: calc(100% - 28px);
+}
+.new-week-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Quote */
+.quote-bar {
+  position: relative; z-index: 1;
+  margin: 20px 14px 0;
+  background: linear-gradient(135deg, rgba(212,168,83,0.07), rgba(108,159,255,0.04));
+  border: 1px solid var(--gold-border); border-radius: var(--radius);
+  padding: 15px 18px; font-size: 11.5px; color: #c4975a;
+  line-height: 1.65; text-align: center; font-style: italic;
+  font-family: 'Playfair Display', serif;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="week-badge" id="weekBadge">Week of —</div>
+  <h1>Nate's<br><em>Protocol</em></h1>
+  <p class="header-sub">Weekly tracker · Habit scorecard · Dopamine system</p>
+</div>
+
+<div class="score-section">
+  <div class="ring-wrap">
+    <svg viewBox="0 0 130 130">
+      <circle class="ring-bg" cx="65" cy="65" r="60"/>
+      <circle class="ring-fill" id="ringFill" cx="65" cy="65" r="60"/>
+    </svg>
+    <div class="ring-center">
+      <div class="ring-pct" id="ringPct">0%</div>
+      <div class="ring-status" id="ringStatus">—</div>
+    </div>
+  </div>
+  <div class="score-row">
+    <div class="score-col">
+      <div class="score-val" id="habitScore">0/36</div>
+      <div class="score-lbl">Habit pts</div>
+    </div>
+    <div class="score-col">
+      <div class="score-val" id="taskScore">0/0</div>
+      <div class="score-lbl">Tasks done</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('habits',this)">Habits</button>
+  <button class="tab" onclick="showTab('tasks',this)">Tasks</button>
+  <button class="tab" onclick="showTab('protocol',this)">Protocol</button>
+  <button class="tab" onclick="showTab('history',this)">History</button>
+</div>
+
+<!-- HABITS -->
+<div class="panel active" id="panel-habits">
+  <div class="dnote">
+    <strong>Foundation first.</strong> These protect your dopamine baseline — the reservoir that determines how motivated you feel all week. Tap each circle as you complete the rep.
+  </div>
+
+  <div class="habit-card h-prayer" id="hc-prayer">
+    <div class="habit-header">
+      <div class="habit-icon">🙏</div>
+      <div class="habit-meta">
+        <div class="habit-name">Bible + Prayer</div>
+        <div class="habit-target">DAILY · 7 of 7</div>
+      </div>
+      <div class="habit-count" id="cnt-prayer">0/7</div>
+    </div>
+    <div class="dot-row" id="dots-prayer"></div>
+  </div>
+
+  <div class="habit-card h-gym" id="hc-gym">
+    <div class="habit-header">
+      <div class="habit-icon">🏋️</div>
+      <div class="habit-meta">
+        <div class="habit-name">Gym (Lifting)</div>
+        <div class="habit-target">4–5× WEEK · goal 5</div>
+      </div>
+      <div class="habit-count" id="cnt-gym">0/5</div>
+    </div>
+    <div class="dot-row" id="dots-gym"></div>
+  </div>
+
+  <div class="habit-card h-cardio" id="hc-cardio">
+    <div class="habit-header">
+      <div class="habit-icon">🏃</div>
+      <div class="habit-meta">
+        <div class="habit-name">Cardio</div>
+        <div class="habit-target">3× WEEK · gym or outside</div>
+      </div>
+      <div class="habit-count" id="cnt-cardio">0/3</div>
+    </div>
+    <div class="dot-row" id="dots-cardio"></div>
+  </div>
+
+  <div class="habit-card h-walk" id="hc-walk">
+    <div class="habit-header">
+      <div class="habit-icon">🚶</div>
+      <div class="habit-meta">
+        <div class="habit-name">Neighborhood Walk</div>
+        <div class="habit-target">DAILY · morning light anchor</div>
+      </div>
+      <div class="habit-count" id="cnt-walk">0/7</div>
+    </div>
+    <div class="dot-row" id="dots-walk"></div>
+  </div>
+
+  <div class="habit-card h-breath" id="hc-breath">
+    <div class="habit-header">
+      <div class="habit-icon">💨</div>
+      <div class="habit-meta">
+        <div class="habit-name">Breathwork</div>
+        <div class="habit-target">3× WEEK · nervous system reset</div>
+      </div>
+      <div class="habit-count" id="cnt-breath">0/3</div>
+    </div>
+    <div class="dot-row" id="dots-breath"></div>
+  </div>
+
+  <div class="habit-card h-meditate" id="hc-meditate">
+    <div class="habit-header">
+      <div class="habit-icon">🧘</div>
+      <div class="habit-meta">
+        <div class="habit-name">Meditation</div>
+        <div class="habit-target">3× WEEK · procrastination reset</div>
+      </div>
+      <div class="habit-count" id="cnt-meditate">0/3</div>
+    </div>
+    <div class="dot-row" id="dots-meditate"></div>
+  </div>
+
+  <div class="habit-card h-reading" id="hc-reading">
+    <div class="habit-header">
+      <div class="habit-icon">📖</div>
+      <div class="habit-meta">
+        <div class="habit-name">Deep Reading / Research</div>
+        <div class="habit-target">2× WEEK · real estate &amp; growth</div>
+      </div>
+      <div class="habit-count" id="cnt-reading">0/2</div>
+    </div>
+    <div class="dot-row" id="dots-reading"></div>
+  </div>
+
+  <div class="habit-card h-outreach" id="hc-outreach">
+    <div class="habit-header">
+      <div class="habit-icon">📨</div>
+      <div class="habit-meta">
+        <div class="habit-name">Developer Outreach</div>
+        <div class="habit-target">3× WEEK · highest leverage</div>
+      </div>
+      <div class="habit-count" id="cnt-outreach">0/3</div>
+    </div>
+    <div class="dot-row" id="dots-outreach"></div>
+  </div>
+
+  <div class="quote-bar" id="quoteBar">"The effort is the reward. Show up before you feel ready."</div>
+</div>
+
+<!-- TASKS -->
+<div class="panel" id="panel-tasks">
+  <div class="slabel" style="margin-top:4px">This week's tasks</div>
+  <div class="task-input-row">
+    <input class="task-input" id="taskInput" type="text" placeholder="Add a task for this week…" maxlength="120"
+      onkeydown="if(event.key==='Enter') addTask()">
+    <button class="add-btn" onclick="addTask()">+</button>
+  </div>
+  <div class="task-count-bar">
+    <span id="taskCountLabel">0 tasks</span>
+    <span id="taskCountWarn"></span>
+  </div>
+  <div class="task-list" id="taskList">
+    <div class="empty-state">
+      <span class="empty-emoji">📋</span>
+      Add your tasks above.<br>
+      <strong style="color:var(--text2)">Keep it under 25</strong> — your best week was 29 tasks at 79%.<br>More tasks ≠ more done.
+    </div>
+  </div>
+</div>
+
+<!-- PROTOCOL -->
+<div class="panel" id="panel-protocol">
+  <div class="slabel" style="margin-top:4px">Your dopamine system — how it works</div>
+
+  <div class="proto-card">
+    <div class="proto-head">
+      <div class="proto-icon" style="background:rgba(224,92,92,0.1)">📵</div>
+      <div class="proto-title">No Phone — First 30 Min</div>
+      <div class="proto-tag" style="background:rgba(224,92,92,0.08);color:var(--red)">DAILY · HARD RULE</div>
+    </div>
+    <div class="proto-body">
+      Your dopamine system recalibrates overnight. Scrolling before it finishes <strong>resets the clock</strong> and trains your brain to need stimulation to function — this is the root of the scroll-then-unmotivated loop.
+      <div class="proto-why">Charger goes across the room tonight. The friction is the point.</div>
+    </div>
+  </div>
+
+  <div class="proto-card">
+    <div class="proto-head">
+      <div class="proto-icon" style="background:rgba(82,196,138,0.1)">🚶</div>
+      <div class="proto-title">Neighborhood Walk = Morning Light Protocol</div>
+      <div class="proto-tag" style="background:rgba(82,196,138,0.1);color:var(--green)">DAILY</div>
+    </div>
+    <div class="proto-body">
+      Your walk does double duty: low-stimulation movement and circadian reset. Getting outside within 45 min of waking — no sunglasses — sets your body clock and determines when melatonin starts that night. <strong>Most reliable lever to pull your sleep schedule earlier</strong> within 2–3 weeks.
+      <div class="proto-why">10 min minimum. Cloudy days count. No screen substitute works.</div>
+    </div>
+  </div>
+
+  <div class="proto-card">
+    <div class="proto-head">
+      <div class="proto-icon" style="background:rgba(212,111,168,0.1)">💨</div>
+      <div class="proto-title">Breathwork — Nervous System Reset</div>
+      <div class="proto-tag" style="background:rgba(212,111,168,0.1);color:var(--pink)">3×/WEEK</div>
+    </div>
+    <div class="proto-body">
+      Breathwork is one of the fastest ways to shift from anxious/scattered to calm/focused without external stimulation. <strong>Box breathing or cyclic sighing</strong> (double inhale through nose, long exhale through mouth) before a deep work session primes your brain for the task instead of fighting it.
+      <div class="proto-why">4–5 minutes is enough. Use it right before outreach when resistance is highest.</div>
+    </div>
+  </div>
+
+  <div class="proto-card">
+    <div class="proto-head">
+      <div class="proto-icon" style="background:rgba(62,207,207,0.1)">🏃</div>
+      <div class="proto-title">Cardio — Dopamine + BDNF Builder</div>
+      <div class="proto-tag" style="background:rgba(62,207,207,0.1);color:var(--teal)">3×/WEEK</div>
+    </div>
+    <div class="proto-body">
+      Cardio — separate from lifting — produces a sustained dopamine and BDNF release that lasts hours after. This is your <strong>cognitive performance enhancer</strong>. Run before your outreach block when you can. Running outside also doubles as your morning walk.
+      <div class="proto-why">20–30 min moderate intensity. Outside beats treadmill for circadian benefits.</div>
+    </div>
+  </div>
+
+  <div class="proto-card">
+    <div class="proto-head">
+      <div class="proto-icon" style="background:rgba(160,100,220,0.1)">🧘</div>
+      <div class="proto-title">Meditation — Procrastination Exit Ramp</div>
+      <div class="proto-tag" style="background:rgba(160,100,220,0.1);color:var(--purple)">3×/WEEK</div>
+    </div>
+    <div class="proto-body">
+      When you're stuck, dopamine is in a trough. Cleaning or scrolling LinkedIn gives a tiny hit but doesn't reset the system. Instead, do something <strong>harder than sitting still</strong> — 10 min focusing on your breath when it's frustrating deepens the trough, forcing a faster rebound to motivated baseline.
+      <div class="proto-why">The discomfort during meditation IS the mechanism. Staying with it is the rep.</div>
+    </div>
+  </div>
+
+  <div class="proto-card">
+    <div class="proto-head">
+      <div class="proto-icon" style="background:rgba(224,92,92,0.1)">📨</div>
+      <div class="proto-title">Outreach is Non-Negotiable</div>
+      <div class="proto-tag" style="background:rgba(224,92,92,0.08);color:var(--red)">3×/WEEK · PRIORITY</div>
+    </div>
+    <div class="proto-body">
+      Once or twice a week right now — goal is 3x minimum. Not research, not planning, not tracker-building. <strong>Sending actual messages</strong> to developers, GCs, and investor networks. That's the rep that compounds toward where you're going.
+      <div class="proto-why">Treat it like gym. Don't wait to feel ready. Go, then feel ready.</div>
+    </div>
+  </div>
+
+  <div class="proto-card">
+    <div class="proto-head">
+      <div class="proto-icon" style="background:rgba(212,168,83,0.1)">⚠️</div>
+      <div class="proto-title">Don't Stack Dopamine</div>
+      <div class="proto-tag" style="background:var(--gold-dim);color:var(--gold)">HARD RULE</div>
+    </div>
+    <div class="proto-body">
+      Deleting TikTok and Instagram was right. Short-form video is the most aggressive dopamine spiker you encounter — it makes everything feel slow by comparison. Same principle applies to always stacking gym + music + pre-workout + caffeine. <strong>Occasionally do the hard thing with no external rewards</strong> to keep intrinsic motivation intact.
+      <div class="proto-why">The goal: make effort itself feel like the reward. That's the holy grail.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="panel" id="panel-history">
+  <div class="slabel" style="margin-top:4px">Past weeks</div>
+  <div class="hist-table">
+    <div class="hist-row hist-head">
+      <div>Week</div>
+      <div style="text-align:center">Done</div>
+      <div style="text-align:center">Total</div>
+      <div style="text-align:right">Score</div>
+    </div>
+    <div class="hist-row">
+      <div class="hist-week">Feb 22</div>
+      <div class="hist-num">10</div>
+      <div class="hist-num">25</div>
+      <div class="hist-stat"><span class="pill pill-low">40% LOW</span></div>
+    </div>
+    <div class="hist-row">
+      <div class="hist-week">Mar 01</div>
+      <div class="hist-num">23</div>
+      <div class="hist-num">29</div>
+      <div class="hist-stat"><span class="pill pill-good">79% GOOD</span></div>
+    </div>
+    <div class="hist-row">
+      <div class="hist-week">Mar 08</div>
+      <div class="hist-num">14</div>
+      <div class="hist-num">27</div>
+      <div class="hist-stat"><span class="pill pill-fair">52% FAIR</span></div>
+    </div>
+    <div class="hist-row">
+      <div class="hist-week">Mar 15</div>
+      <div class="hist-num">20</div>
+      <div class="hist-num">32</div>
+      <div class="hist-stat"><span class="pill pill-fair">63% FAIR</span></div>
+    </div>
+    <div class="hist-row">
+      <div class="hist-week">Mar 22</div>
+      <div class="hist-num">14</div>
+      <div class="hist-num">26</div>
+      <div class="hist-stat"><span class="pill pill-fair">54% FAIR</span></div>
+    </div>
+    <div id="histExtra"></div>
+  </div>
+  <button class="new-week-btn" onclick="archiveWeek()">+ Archive this week &amp; start fresh</button>
+</div>
+
+<script>
+const HABITS = [
+  { id:'prayer',   goal:7,  dots:7 },
+  { id:'gym',      goal:5,  dots:5 },
+  { id:'cardio',   goal:3,  dots:3 },
+  { id:'walk',     goal:7,  dots:7 },
+  { id:'breath',   goal:3,  dots:3 },
+  { id:'meditate', goal:3,  dots:3 },
+  { id:'reading',  goal:2,  dots:2 },
+  { id:'outreach', goal:3,  dots:3 },
+];
+const TOTAL_HABIT_PTS = HABITS.reduce((s,h) => s + h.goal, 0); // 33
+
+const QUOTES = [
+  "The effort is the reward. Show up before you feel ready.",
+  "Every outreach email is a rep. Reps compound.",
+  "You don't need motivation to start. You need to start to find motivation.",
+  "Friction is the signal, not the reason to stop.",
+  "Your best week was 79%. That's who you are. Return to it.",
+  "Prayer before plans. Movement before screens.",
+  "Breathe first. Then build.",
+  "The developer you want to meet is waiting on your email.",
+  "Breathwork → Outreach. Every time.",
+  "Walk outside. The light sets the clock.",
+];
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('nate-protocol-v3');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return { habits:{}, tasks:[], history:[], weekStart: getWeekStart() };
+}
+
+function saveState() {
+  try { localStorage.setItem('nate-protocol-v3', JSON.stringify(state)); } catch(e) {}
+}
+
+function getWeekStart() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d.toISOString().split('T')[0];
+}
+
+function checkWeekReset() {
+  const current = getWeekStart();
+  if (state.weekStart !== current) {
+    archiveWeek(true);
+    state.weekStart = current;
+    state.habits = {};
+    state.tasks = [];
+    saveState();
+  }
+}
+
+checkWeekReset();
+renderWeekLabel();
+renderAllHabits();
+renderTasks();
+renderHistory();
+updateScore();
+renderQuote();
+
+function renderWeekLabel() {
+  const d = new Date(state.weekStart + 'T12:00:00');
+  document.getElementById('weekBadge').textContent =
+    'Week of ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function renderQuote() {
+  const el = document.getElementById('quoteBar');
+  if (el) el.textContent = '"' + QUOTES[Math.floor(Math.random()*QUOTES.length)] + '"';
+}
+
+function renderAllHabits() { HABITS.forEach(h => renderHabit(h)); }
+
+function renderHabit(h) {
+  const count = state.habits[h.id] || 0;
+  const container = document.getElementById('dots-' + h.id);
+  const countEl   = document.getElementById('cnt-'  + h.id);
+  const card      = document.getElementById('hc-'   + h.id);
+  if (!container || !countEl) return;
+
+  countEl.textContent = count + '/' + h.goal;
+  card.classList.toggle('met', count >= h.goal);
+  container.innerHTML = '';
+
+  for (let i = 0; i < h.dots; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'dot' + (i < count ? ' filled' : '');
+    dot.textContent = i < count ? '✓' : (i + 1);
+    dot.addEventListener('click', () => toggleDot(h.id, i, h.goal));
+    container.appendChild(dot);
+  }
+}
+
+function toggleDot(id, idx, goal) {
+  const current = state.habits[id] || 0;
+  if (idx < current)       state.habits[id] = idx;
+  else if (idx === current && current < goal) state.habits[id] = current + 1;
+  else if (idx === current - 1) state.habits[id] = current - 1;
+  saveState();
+  renderHabit(HABITS.find(x => x.id === id));
+  updateScore();
+}
+
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const text = input.value.trim();
+  if (!text) return;
+  state.tasks.push({ id: Date.now(), text, done: false });
+  input.value = '';
+  saveState();
+  renderTasks();
+  updateScore();
+}
+
+function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (t) { t.done = !t.done; saveState(); renderTasks(); updateScore(); }
+}
+
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(x => x.id !== id);
+  saveState(); renderTasks(); updateScore();
+}
+
+function renderTasks() {
+  const list  = document.getElementById('taskList');
+  const lbl   = document.getElementById('taskCountLabel');
+  const warn  = document.getElementById('taskCountWarn');
+  const total = state.tasks.length;
+  const done  = state.tasks.filter(t => t.done).length;
+
+  lbl.textContent = total + ' task' + (total===1?'':'s') + ' · ' + done + ' done';
+  warn.textContent = total > 24 ? '⚠ Getting long — focus on fewer' : '';
+  warn.className = total > 24 ? 'task-count-warn' : '';
+
+  if (total === 0) {
+    list.innerHTML = '<div class="empty-state"><span class="empty-emoji">📋</span>Add your tasks above.<br><strong style="color:var(--text2)">Keep it under 25</strong> — your best week was 29 tasks at 79%.<br>More tasks ≠ more done.</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  [...state.tasks.filter(t=>!t.done), ...state.tasks.filter(t=>t.done)].forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'task-item';
+    row.innerHTML = `
+      <div class="task-check${t.done?' checked':''}" onclick="toggleTask(${t.id})"></div>
+      <div class="task-text${t.done?' done':''}">${esc(t.text)}</div>
+      <button class="task-del" onclick="deleteTask(${t.id})">×</button>`;
+    list.appendChild(row);
+  });
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateScore() {
+  const habitPts = HABITS.reduce((s,h) => s + Math.min(state.habits[h.id]||0, h.goal), 0);
+  const taskTotal = state.tasks.length;
+  const taskDone  = state.tasks.filter(t=>t.done).length;
+
+  const habitPct = habitPts / TOTAL_HABIT_PTS;
+  const taskPct  = taskTotal > 0 ? taskDone / taskTotal : 0;
+  const pct = Math.round((habitPct * 0.6 + taskPct * 0.4) * 100);
+
+  const circ = 377;
+  document.getElementById('ringFill').style.strokeDashoffset = circ - (pct/100)*circ;
+
+  let color, label, cls;
+  if      (pct >= 85) { color='#d4a853'; label='ELITE';  cls='s-elite'; }
+  else if (pct >= 65) { color='#52c48a'; label='GOOD';   cls='s-good';  }
+  else if (pct >= 40) { color='#e09a3c'; label='FAIR';   cls='s-fair';  }
+  else                { color='#e05c5c'; label='LOW';    cls='s-low';   }
+
+  document.getElementById('ringFill').style.stroke = color;
+  document.getElementById('ringPct').textContent = pct + '%';
+  const st = document.getElementById('ringStatus');
+  st.textContent = label; st.className = 'ring-status ' + cls;
+  document.getElementById('habitScore').textContent = habitPts + '/' + TOTAL_HABIT_PTS;
+  document.getElementById('taskScore').textContent  = taskDone + '/' + taskTotal;
+}
+
+function archiveWeek(silent) {
+  if (!silent) {
+    const taskTotal = state.tasks.length;
+    const taskDone  = state.tasks.filter(t=>t.done).length;
+    const habitPts  = HABITS.reduce((s,h) => s + Math.min(state.habits[h.id]||0, h.goal), 0);
+    const habitPct  = habitPts / TOTAL_HABIT_PTS;
+    const taskPct   = taskTotal > 0 ? taskDone / taskTotal : 0;
+    const pct = Math.round((habitPct*0.6 + taskPct*0.4)*100);
+    state.history.unshift({ week: state.weekStart, done: taskDone, total: taskTotal, pct });
+    state.habits = {}; state.tasks = []; state.weekStart = getWeekStart();
+    saveState();
+    renderAllHabits(); renderTasks(); updateScore(); renderWeekLabel(); renderHistory();
+  }
+}
+
+function renderHistory() {
+  const el = document.getElementById('histExtra');
+  if (!el) return;
+  el.innerHTML = '';
+  state.history.forEach(w => {
+    const d = new Date(w.week + 'T12:00:00');
+    const label = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    let pc, pl;
+    if      (w.pct>=85){ pc='pill-elite'; pl=w.pct+'% ELITE'; }
+    else if (w.pct>=65){ pc='pill-good';  pl=w.pct+'% GOOD';  }
+    else if (w.pct>=40){ pc='pill-fair';  pl=w.pct+'% FAIR';  }
+    else               { pc='pill-low';   pl=w.pct+'% LOW';   }
+    el.innerHTML += `<div class="hist-row">
+      <div class="hist-week">${label}</div>
+      <div class="hist-num">${w.done}</div>
+      <div class="hist-num">${w.total}</div>
+      <div class="hist-stat"><span class="pill ${pc}">${pl}</span></div>
+    </div>`;
+  });
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
