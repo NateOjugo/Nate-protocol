@@ -655,7 +655,17 @@ function getWeekStart() {
 function checkWeekReset() {
   const current = getWeekStart();
   if (state.weekStart !== current) {
-    archiveWeek(true);
+    // Auto-archive the previous week before resetting
+    const taskTotal = state.tasks.length;
+    const taskDone  = state.tasks.filter(t => t.done).length;
+    const habitPts  = HABITS.reduce((s,h) => s + Math.min(state.habits[h.id]||0, h.goal), 0);
+    const habitPct  = habitPts / TOTAL_HABIT_PTS;
+    const taskPct   = taskTotal > 0 ? taskDone / taskTotal : 0;
+    const pct = Math.round((habitPct * 0.6 + taskPct * 0.4) * 100);
+    // Only archive if there was any activity
+    if (habitPts > 0 || taskTotal > 0) {
+      state.history.unshift({ week: state.weekStart, done: taskDone, total: taskTotal, pct });
+    }
     state.weekStart = current;
     state.habits = {};
     state.tasks = [];
